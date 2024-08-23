@@ -7,6 +7,8 @@ import fnmatch
 import config
 from database import SqliteHelper
 from java_parse import JavaParse, calculate_similar_score_method_params
+from chains import load_embedding_model
+from streamlit.logger import get_logger
 def _get_project_files(project_dir):
     file_lists = []
     for root, dirs, files in os.walk(project_dir):
@@ -39,3 +41,10 @@ file_path_list = _get_project_files(file_path)
 
 java_parse = JavaParse(sqlite.db_path, project_id)
 java_parse.parse_java_file_list(file_path_list, commit_or_branch_new)
+
+logger = get_logger(__name__)
+embedding_model_name = os.getenv("EMBEDDING_MODEL")
+ollama_base_url = os.getenv("OLLAMA_BASE_URL")
+embeddings, dimension = load_embedding_model(embedding_model_name, config={"ollama_base_url": ollama_base_url}, logger=logger)
+
+print(dimension)
