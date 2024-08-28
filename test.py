@@ -46,5 +46,8 @@ logger = get_logger(__name__)
 embedding_model_name = os.getenv("EMBEDDING_MODEL")
 ollama_base_url = os.getenv("OLLAMA_BASE_URL")
 embeddings, dimension = load_embedding_model(embedding_model_name, config={"ollama_base_url": ollama_base_url}, logger=logger)
+question_text = "hi everyone"
+embeddings_data = embeddings.embed_query(question_text)
 
 print(dimension)
+# print(embeddings_data.tolist())

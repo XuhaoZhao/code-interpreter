@@ -18,3 +18,4 @@ langchain-openai
 langchain-community
 langchain-google-genai
 langchain-huggingface
+# langchain_huggingface

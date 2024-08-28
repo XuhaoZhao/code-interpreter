@@ -37,7 +37,12 @@ def create_vector_index(driver, dimension: int) -> None:
         driver.query(index_query, {"dimension": dimension})
     except:  # Already exists
         pass
-
+def create_method_vector_index(driver, dimension: int) -> None:
+    index_query = "CALL db.index.vector.createNodeIndex('method_index', 'Method', 'method_name_embedding', $dimension, 'cosine')"
+    try:
+        driver.query(index_query, {"dimension": dimension})
+    except:  # Already exists
+        pass
 
 def create_constraints(driver):
     driver.query(
@@ -52,3 +57,6 @@ def create_constraints(driver):
     driver.query(
         "CREATE CONSTRAINT tag_name IF NOT EXISTS FOR (t:Tag) REQUIRE (t.name) IS UNIQUE"
     )
+def create_constraint_for_method_node(driver):
+    driver.query(
+    "CREATE CONSTRAINT method_id_unique IF NOT EXISTS FOR (m:Method) REQUIRE (m.method_id) IS UNIQUE")

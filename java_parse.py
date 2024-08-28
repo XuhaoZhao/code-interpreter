@@ -8,9 +8,41 @@ from database import SqliteHelper
 from constant import ENTITY, RETURN_TYPE, PARAMETERS, BODY, METHODS, FIELDS, \
     PARAMETER_TYPE_METHOD_INVOCATION_UNKNOWN, JAVA_BASIC_TYPE, MAPPING_LIST, JAVA_UTIL_TYPE
 import config as config
+from chains import load_embedding_model
+from streamlit.logger import get_logger
+
+
+import os
+import requests
+from dotenv import load_dotenv
+from langchain_community.graphs import Neo4jGraph
+from utils import create_constraint_for_method_node, create_method_vector_index
+from chains import load_embedding_model
+from streamlit.logger import get_logger
+import uuid
+
+url = os.getenv("NEO4J_URI")
+username = os.getenv("NEO4J_USERNAME")
+password = os.getenv("NEO4J_PASSWORD")
+ollama_base_url = os.getenv("OLLAMA_BASE_URL")
+embedding_model_name = os.getenv("EMBEDDING_MODEL")
+# Remapping for Langchain Neo4j integration
+os.environ["NEO4J_URL"] = url
+
+logger = get_logger(__name__)
+
+
+neo4j_graph = Neo4jGraph(url=url, username=username, password=password)
 
 sys.setrecursionlimit(10000)
 logging.basicConfig(format='%(asctime)s %(message)s', level=logging.DEBUG)
+
+logger = get_logger(__name__)
+embedding_model_name = os.getenv("EMBEDDING_MODEL")
+ollama_base_url = os.getenv("OLLAMA_BASE_URL")
+embeddings, dimension = load_embedding_model(embedding_model_name, config={"ollama_base_url": ollama_base_url}, logger=logger)
+create_constraint_for_method_node(neo4j_graph)
+create_method_vector_index(neo4j_graph, dimension)
 
 
 def calculate_similar_score_method_params(except_method_param_list, method_param_list):
@@ -359,6 +391,7 @@ class JavaParse(object):
     def _parse_method(self, methods, lines, class_id, import_map, field_map, package_name, filepath):
         # 处理 methods
         all_method = []
+        all_method_graph = []
         class_db = self.sqlite.select_data(f'SELECT controller_base_url, implements FROM class WHERE project_id = {self.project_id} and class_id = {class_id}')[0]
         base_url = class_db['controller_base_url'] if class_db['controller_base_url'] else ''
         class_implements = class_db['implements']
@@ -440,7 +473,73 @@ class JavaParse(object):
                 'end_line': method_end_line,
                 'documentation': documentation
             }
+            method_db_graph= {
+                'method_id': uuid.uuid4().hex,
+                'class_id': class_id,
+                'project_id': self.project_id,
+                'annotations': annotations,
+                'access_modifier': access_modifier,
+                'return_type': return_type,
+                'method_name': method_name,
+                'method_name_embedding': embeddings.embed_query(method_name),
+                'parameters': json.dumps(parameters),
+                'body': json.dumps(method_body),
+                'method_invocation_map': json.dumps(method_invocation),
+                'is_static': is_static,
+                'is_abstract': is_abstract,
+                'is_api': is_api,
+                'api_path': json.dumps(api_path) if is_api else None,
+                'start_line': method_start_line,
+                'end_line': method_end_line,
+                'documentation': documentation
+            }
+
+
+            
             all_method.append(method_db)
+            all_method_graph.append(method_db_graph)
+        query = """
+        UNWIND $all_method_graph AS method_data
+        MERGE (method:Method {method_id: method_data.method_id})
+        ON CREATE SET 
+            method.class_id = method_data.class_id,
+            method.project_id = method_data.project_id,
+            method.annotations = method_data.annotations,
+            method.access_modifier = method_data.access_modifier,
+            method.return_type = method_data.return_type,
+            method.method_name = method_data.method_name,
+            method.method_name_embedding = method_data.method_name_embedding,
+            method.parameters = method_data.parameters,
+            method.body = method_data.body,
+            method.method_invocation_map = method_data.method_invocation_map,
+            method.is_static = method_data.is_static,
+            method.is_abstract = method_data.is_abstract,
+            method.is_api = method_data.is_api,
+            method.api_path = method_data.api_path,
+            method.start_line = method_data.start_line,
+            method.end_line = method_data.end_line,
+            method.documentation = method_data.documentation
+        ON MATCH SET
+            method.class_id = method_data.class_id,
+            method.project_id = method_data.project_id,
+            method.annotations = method_data.annotations,
+            method.access_modifier = method_data.access_modifier,
+            method.return_type = method_data.return_type,
+            method.method_name = method_data.method_name,
+            method.method_name_embedding = method_data.method_name_embedding,
+            method.parameters = method_data.parameters,
+            method.body = method_data.body,
+            method.method_invocation_map = method_data.method_invocation_map,
+            method.is_static = method_data.is_static,
+            method.is_abstract = method_data.is_abstract,
+            method.is_api = method_data.is_api,
+            method.api_path = method_data.api_path,
+            method.start_line = method_data.start_line,
+            method.end_line = method_data.end_line,
+            method.documentation = method_data.documentation
+        """
+        params = {"all_method_graph":all_method_graph}
+        neo4j_graph.query(query, params)
         self.sqlite.update_data(f'DELETE FROM methods where class_id={class_id}')
         self.sqlite.insert_data('methods', all_method)
 
