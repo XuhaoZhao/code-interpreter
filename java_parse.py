@@ -236,6 +236,7 @@ class JavaParse(object):
             node_line = node.position.line
             node_arguments = [n for n in node_arguments if n]
             node_method = f'{member}({",".join(node_arguments)})'
+            # node_method = f'{member}(),{",".join(node_arguments)}'
             self._add_method_used_to_method_invocation(method_invocation, qualifier_type, node_method, [node_line])
             if self._is_valid_prefix(qualifier_type):
                 qualifier_package_class, method_params, method_db = self._find_method_in_package_class(qualifier_type, member, node_arguments)
@@ -271,6 +272,7 @@ class JavaParse(object):
                 if same_class_method:
                     node_arguments = self._deal_var_type(same_class_method.parameters, BODY, parameters_map, variable_map, field_map, import_map, method_invocation, package_name, filepath, methods, method_name_entity_map, class_id)
                     node_method = f'{member}({",".join(node_arguments)})'
+                    # node_method = f'{member}(),{",".join(node_arguments)}'
                     self._add_method_used_to_method_invocation(method_invocation, package_class, node_method, [node_line])
                     return_type = self._deal_declarator_type(same_class_method.return_type, BODY, parameters_map, variable_map, field_map, import_map, method_invocation, package_name, filepath, methods, method_name_entity_map, class_id)
             # todo 继承方法
@@ -294,6 +296,7 @@ class JavaParse(object):
                 selector_arguments = self._deal_var_type(selector.arguments, BODY, parameters_map, variable_map, field_map, import_map, method_invocation, package_name, filepath, methods, method_name_entity_map, class_id)
                 selector_line = selector.position.line
                 selector_method = f'{selector_member}({",".join(selector_arguments)})'
+                # selector_method = f'{selector_member}(),{",".join(selector_arguments)}'
                 if self._is_valid_prefix(selector_qualifier_type):
                     self._add_method_used_to_method_invocation(method_invocation, selector_qualifier_type, selector_method, [selector_line])
                 selector_package_class, method_params, method_db = self._find_method_in_package_class(selector_qualifier_type, selector_member, selector_arguments)
@@ -392,7 +395,7 @@ class JavaParse(object):
         # 处理 methods
         all_method = []
         all_method_graph = []
-        class_db = self.sqlite.select_data(f'SELECT controller_base_url, implements FROM class WHERE project_id = {self.project_id} and class_id = {class_id}')[0]
+        class_db = self.sqlite.select_data(f'SELECT class_type,class_name,package_name, controller_base_url, implements FROM class WHERE project_id = {self.project_id} and class_id = {class_id}')[0]
         base_url = class_db['controller_base_url'] if class_db['controller_base_url'] else ''
         class_implements = class_db['implements']
         method_name_entity_map = {method.name: method for method in methods}
@@ -491,11 +494,13 @@ class JavaParse(object):
                 'api_path': json.dumps(api_path) if is_api else None,
                 'start_line': method_start_line,
                 'end_line': method_end_line,
-                'documentation': documentation
+                'documentation': documentation,
+                'full_class_name': class_db['package_name'] + '.'+ class_db['class_name'],
+                'class_name': class_db['class_name'],
+                'class_type': class_db['class_type']
+
             }
 
-
-            
             all_method.append(method_db)
             all_method_graph.append(method_db_graph)
         query = """
@@ -518,7 +523,10 @@ class JavaParse(object):
             method.api_path = method_data.api_path,
             method.start_line = method_data.start_line,
             method.end_line = method_data.end_line,
-            method.documentation = method_data.documentation
+            method.documentation = method_data.documentation,
+            method.full_class_name = method_data.full_class_name,
+            method.class_name = method_data.class_name,
+            method.class_type = method_data.class_type
         ON MATCH SET
             method.class_id = method_data.class_id,
             method.project_id = method_data.project_id,
@@ -536,7 +544,10 @@ class JavaParse(object):
             method.api_path = method_data.api_path,
             method.start_line = method_data.start_line,
             method.end_line = method_data.end_line,
-            method.documentation = method_data.documentation
+            method.documentation = method_data.documentation,
+            method.full_class_name = method_data.full_class_name,
+            method.class_name = method_data.class_name,
+            method.class_type = method_data.class_type
         """
         params = {"all_method_graph":all_method_graph}
         neo4j_graph.query(query, params)

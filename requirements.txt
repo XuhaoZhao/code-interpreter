@@ -7,7 +7,7 @@ streamlit
 # sentence_transformers==2.2.2
 Pillow
 fastapi
-# PyPDF2
+PyPDF2
 torch==2.0.1
 pydantic
 uvicorn
@@ -19,3 +19,5 @@ langchain-community
 langchain-google-genai
 langchain-huggingface
 # langchain_huggingface
+javalang==0.13.0
+unidiff~=0.7.4
