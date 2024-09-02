@@ -60,12 +60,12 @@ styl = f"""
     /* not great support for :has yet (hello FireFox), but using it for now */
     .element-container:has([aria-label="Select RAG mode"]) {{
       position: fixed;
-      bottom: 10px;
+      bottom: 200px;
       background: white;
       z-index: 101;
     }}
     .stChatFloatingInputContainer {{
-        bottom: 600px;
+        bottom: 10px;
     }}
 
     /* Generate ticket text area */

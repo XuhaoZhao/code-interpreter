@@ -103,6 +103,7 @@ def configure_qa_rag_chain(llm, embeddings, embeddings_store_url, username, pass
         llm,
         chain_type="stuff",
         prompt=qa_prompt,
+        verbose=True
     )
 
     # Vector + Knowledge Graph response
