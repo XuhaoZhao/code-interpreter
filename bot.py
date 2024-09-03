@@ -12,6 +12,7 @@ from chains import (
     load_embedding_model,
     load_llm,
     configure_llm_only_chain,
+    configure_method_rag_chain,
     configure_qa_rag_chain,
     generate_ticket,
 )
@@ -50,7 +51,7 @@ class StreamHandler(BaseCallbackHandler):
 llm = load_llm(llm_name, logger=logger, config={"ollama_base_url": ollama_base_url})
 
 llm_chain = configure_llm_only_chain(llm)
-rag_chain = configure_qa_rag_chain(
+rag_chain = configure_method_rag_chain(
     llm, embeddings, embeddings_store_url=url, username=username, password=password
 )
 

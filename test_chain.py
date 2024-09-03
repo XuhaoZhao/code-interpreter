@@ -37,8 +37,13 @@ neo4j_graph = Neo4jGraph(url=url, username=username, password=password)
 embeddings, dimension = load_embedding_model(
     embedding_model_name, config={"ollama_base_url": ollama_base_url}, logger=logger
 )
-
-llm = load_llm(llm_name, logger=logger, config={"ollama_base_url": ollama_base_url})
+llm = ChatOpenAI(
+    api_key="ollama",
+    model="llama3.1",
+    base_url=ollama_base_url,
+)
+llm = llm.bind_tools(tools)
+# llm = load_llm(llm_name, logger=logger, config={"ollama_base_url": ollama_base_url})
 class Entities(BaseModel):
     """Identifying information about entities."""
     names: List[str] = Field(
