@@ -42,7 +42,7 @@ llm = ChatOpenAI(
     model="llama3.1",
     base_url=ollama_base_url,
 )
-llm = llm.bind_tools(tools)
+
 # llm = load_llm(llm_name, logger=logger, config={"ollama_base_url": ollama_base_url})
 class Entities(BaseModel):
     """Identifying information about entities."""

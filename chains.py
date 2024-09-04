@@ -186,9 +186,7 @@ def configure_method_rag_chain(llm, embeddings, embeddings_store_url, username, 
         index_name="method_index",  # vector by default
         text_node_property="body",  # text by default
         retrieval_query="""
-    WITH node AS method, score AS similarity
-        MATCH path = (m:Method {method_name: 'start', class_id: 43})-[:CALLS*]->(function)
-        RETURN path
+OPTIONAL MATCH (node)-[:CALLS]->(p) WITH node, score, collect(p.body) AS editors RETURN node.body AS text, score, editors,node{body:node.body,invoke:editors} AS metadata
     """,
     )
 
