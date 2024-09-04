@@ -49,7 +49,7 @@ kg = Neo4jVector.from_existing_index(
     index_name="method_index",  # vector by default
     text_node_property="method_name",  # text by default
     retrieval_query="""
-OPTIONAL MATCH (node)-[:CALLS]->(p) WITH node, score, collect(p.body) AS editors RETURN node.body AS text, score, editors,node{body:node.body,invoke:editors} AS metadata
+OPTIONAL MATCH (node)-[:CALLS]->(p) WITH node, score, collect(p.body) AS editors RETURN {method:node.body,invoke:editors} AS text, score, editors,node{body:node.body,invoke:editors} AS metadata
 """,
 )
 
