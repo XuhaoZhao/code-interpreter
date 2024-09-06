@@ -1083,7 +1083,7 @@ class JavaParse(object):
                 file_content = fp.read()
         except:
             return
-        lines = file_content.split('\n')
+        lines = file_content.splitlines()
         try:
             tree = javalang.parse.parse(file_content)
             if not tree.types:
