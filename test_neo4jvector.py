@@ -54,3 +54,4 @@ OPTIONAL MATCH (node)-[:CALLS]->(p) WITH node, score, collect(p.body) AS editors
 )
 
 print(kg.similarity_search("where is the SingleStart", k=1))
+

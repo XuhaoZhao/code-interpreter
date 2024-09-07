@@ -391,7 +391,7 @@ class JavaParse(object):
             all_method.append(method_db)
         self.sqlite.insert_data('methods', all_method)
 
-    def _parse_method(self, methods, lines, class_id, import_map, field_map, package_name, filepath):
+    def _parse_method(self, methods, lines, class_id, import_map, field_map, package_name, filepath,methods_end_line):
         # 处理 methods
         all_method = []
         all_method_graph = []
@@ -444,6 +444,9 @@ class JavaParse(object):
             if method_obj.annotations:
                 method_start_line = method_obj.annotations[0].position.line
             method_end_line = self._get_method_end_line(method_obj)
+            if method_name in methods_end_line:
+                method_end_line = methods_end_line.get(method_name)['end_line']
+                method_end_line = method_end_line - 1
             method_body = lines[method_start_line - 1: method_end_line + 1]
 
             # 处理方法体
@@ -486,7 +489,7 @@ class JavaParse(object):
                 'method_name': method_name,
                 'method_name_embedding': embeddings.embed_query(method_name),
                 'parameters': json.dumps(parameters),
-                'body': json.dumps(method_body),
+                'body': "\n".join(method_body),
                 'method_invocation_map': json.dumps(method_invocation),
                 'is_static': is_static,
                 'is_abstract': is_abstract,
@@ -1033,7 +1036,7 @@ class JavaParse(object):
                     continue
                 self.parse_java_file(import_filepath, commit_or_branch, parse_import_first=parse_import_first)
 
-    def _parse_tree_class(self, class_declaration, filepath, tree_imports, package_name, commit_or_branch, lines, parse_import_first):
+    def _parse_tree_class(self, class_declaration, filepath, tree_imports, package_name, commit_or_branch, lines, parse_import_first,tree):
         class_name = class_declaration.name
         package_class = package_name + '.' + class_name
         import_list = self._parse_imports(tree_imports)
@@ -1055,7 +1058,7 @@ class JavaParse(object):
                                     if type(inner_class) == javalang.tree.ClassDeclaration
                                     or type(inner_class) == javalang.tree.InterfaceDeclaration]
         for inner_class_obj in inner_class_declarations:
-            self._parse_tree_class(inner_class_obj, filepath, tree_imports, package_class, commit_or_branch, lines, parse_import_first)
+            self._parse_tree_class(inner_class_obj, filepath, tree_imports, package_class, commit_or_branch, lines, parse_import_first,tree)
 
         # 处理 field 信息
         field_list = self._parse_fields(class_declaration.fields, package_name, class_name, class_id, import_map, filepath)
@@ -1068,9 +1071,9 @@ class JavaParse(object):
 
         if class_type == 'Enum':
             self._parse_enum(class_declaration.body, lines, class_id, import_map, field_map, package_name, filepath)
-
+        methods_end_line = self.get_accurate_method_end_line(tree,lines)
         # 处理 methods 信息
-        self._parse_method(class_declaration.methods, lines, class_id, import_map, extends_class_fields_map, package_name, filepath)
+        self._parse_method(class_declaration.methods, lines, class_id, import_map, extends_class_fields_map, package_name, filepath,methods_end_line)
 
         self._parse_constructors(class_declaration.constructors, lines, class_id, import_map, extends_class_fields_map, package_name, filepath)
 
@@ -1105,13 +1108,32 @@ class JavaParse(object):
         if parse_import_first:
             self._parse_import_file(tree.imports, commit_or_branch, parse_import_first)
         logging.info(f'Parsing java file: {filepath}')
-        self._parse_tree_class(class_declaration, filepath, tree.imports, package_name, commit_or_branch, lines, parse_import_first)
+        self._parse_tree_class(class_declaration, filepath, tree.imports, package_name, commit_or_branch, lines, parse_import_first,tree)
 
     def parse_java_file_list(self, filepath_list: list, commit_or_branch: str):
         with ThreadPoolExecutor(max_workers=4) as executor:
             futures = [executor.submit(self.parse_java_file, file, commit_or_branch) for file in filepath_list]
             for _ in as_completed(futures):
                 continue
+    def get_accurate_method_end_line(self,tree,lines):
+        methods_end_line = {}
+        for path, method in tree.filter(javalang.tree.MethodDeclaration):
+            start_line = method.position.line
+            end_line = start_line
+            for _, node in method:
+                if hasattr(node, "position") and node.position:
+                    end_line = max(end_line, node.position.line)
+            # Find the last statement in the method body to determine the end lineif method.body:
+            # last_statement = method.body[-1]
+            # end_line = last_statement.position.line
+
+            # javalang给出的行号是从1开始计算的，但是java_code_lines用的是数组下标，是从0开始的，所以要记住这个差异
+            end_line_judge = end_line
+            while end_line_judge < len(lines) - 1 and lines[end_line_judge].count("}") == 1:
+                end_line_judge = end_line_judge + 1
+                end_line = end_line_judge
+            methods_end_line[method.name] = {'end_line':end_line}
+        return methods_end_line
 
 
 if __name__ == '__main__':

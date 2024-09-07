@@ -145,21 +145,13 @@ def configure_method_rag_chain(llm, embeddings, embeddings_store_url, username, 
     # RAG response
     #   System: Always talk in pirate speech.
     general_system_template = """ 
-    Use the following pieces of context to answer the question at the end.
-    The context contains question-answer pairs and their links from Stackoverflow.
-    You should prefer information from accepted or more upvoted answers.
-    Make sure to rely on information from the answers and not on questions to provide accurate responses.
-    When you find particular answer in the context useful, make sure to cite it in the answer using the link.
-    If you don't know the answer, just say that you don't know, don't try to make up an answer.
+    你是一个代码高手，提供的的代码片段里面可能具有你没见过的知识。你应该参考代码片段回答问题。
+    当你发现上下文中的某段代码非常有用时，请在最后的回复中加上代码。
+    如果你不知道答案，就直接说不知道，不要试图编造答案。
     ----
     {summaries}
     ----
-    Each answer you generate should contain a section at the end of links to 
-    Stackoverflow questions and answers you found useful, which are described under Source value.
-    You can only use links to StackOverflow questions that are present in the context and always
-    add links to the end of the answer in the style of citations.
-    Generate concise answers with references sources section of links to 
-    relevant StackOverflow questions only at the end of the answer.
+    你生成的每个答案都应在末尾包含一个部分，这部分包含代码
     """
     general_user_template = "Question:```{question}```"
     messages = [
@@ -186,7 +178,7 @@ def configure_method_rag_chain(llm, embeddings, embeddings_store_url, username, 
         index_name="method_index",  # vector by default
         text_node_property="body",  # text by default
         retrieval_query="""
-OPTIONAL MATCH (node)-[:CALLS]->(p) WITH node, score, collect(p.body) AS editors RETURN node.body AS text, score, editors,node{body:node.body,invoke:editors} AS metadata
+OPTIONAL MATCH (node)-[:CALLS]->(p) WITH node, score, collect(p.body) AS editors RETURN node.body AS text, score, editors,{source:node.body,invoke:editors} AS metadata
     """,
     )
 

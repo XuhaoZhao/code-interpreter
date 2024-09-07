@@ -16,6 +16,7 @@ def _get_project_files(project_dir):
             continue
         for file in files:
             ignore = False
+            
             filepath = os.path.join(root, file)
             for pattern in config.ignore_file:
                 if fnmatch.fnmatch(filepath, pattern):
