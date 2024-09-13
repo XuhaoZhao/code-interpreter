@@ -11,6 +11,12 @@ from chains import (
 )
 import os
 
+from langchain.prompts import (
+    ChatPromptTemplate,
+    HumanMessagePromptTemplate,
+    SystemMessagePromptTemplate
+)
+
 import streamlit as st
 from streamlit.logger import get_logger
 from langchain.callbacks.base import BaseCallbackHandler
@@ -20,6 +26,32 @@ from utils import (
     create_vector_index,
 )
 load_dotenv(".env")
+
+def configure_llm_only_chain(llm):
+    # LLM only response
+    template = """
+    You are a helpful assistant that helps a support agent with answering programming questions.
+    If you don't know the answer, just say that you don't know, you must not make up an answer.
+    """
+    system_message_prompt = SystemMessagePromptTemplate.from_template(template)
+    human_template = "{question}"
+    human_message_prompt = HumanMessagePromptTemplate.from_template(human_template)
+    chat_prompt = ChatPromptTemplate.from_messages(
+        [system_message_prompt, human_message_prompt]
+    )
+
+    def generate_llm_output(
+        user_input: str, callbacks: List[Any], prompt=chat_prompt
+    ) -> str:
+        chain = prompt | llm
+        answer = chain.invoke(
+            {"question": user_input}, config={"callbacks": callbacks}
+        ).content
+        return {"answer": answer}
+
+    return generate_llm_output
+
+
 
 url = os.getenv("NEO4J_URI")
 username = os.getenv("NEO4J_USERNAME")
@@ -39,7 +71,7 @@ embeddings, dimension = load_embedding_model(
 )
 llm = ChatOpenAI(
     api_key="ollama",
-    model="llama3.1",
+    model="codegeex4",
     base_url=ollama_base_url,
 )
 

@@ -19,6 +19,8 @@ from langchain_community.vectorstores import Neo4jVector
 #使用离线模型
 os.environ['TRANSFORMERS_OFFLINE'] = '1'  # 模型
 os.environ['HF_DATASETS_OFFLINE'] = '1'  # 数据
+# os.environ["http_proxy"] = "http://127.0.0.1:7890"
+# os.environ["https_proxy"] = "http://127.0.0.1:7890"
 
 def load_embedding_model(embedding_model_name: str, logger=BaseLogger(), config={}):
     if embedding_model_name == "ollama":
