@@ -14,8 +14,8 @@ from typing import List, Any
 from langchain_core.messages import AIMessage
 from langchain_core.pydantic_v1 import BaseModel, Field
 from typing import List
-from langchain.llms.fake import FakeListLLM
-
+from langchain_community.llms import FakeListLLM
+import json
 
 load_dotenv(".env")
 ollama_base_url = os.getenv("OLLAMA_BASE_URL")
@@ -24,18 +24,33 @@ username = os.getenv("NEO4J_USERNAME")
 password = os.getenv("NEO4J_PASSWORD")
 ollama_base_url = os.getenv("OLLAMA_BASE_URL")
 llm_name = os.getenv("LLM")
-# llm = ChatOllama(
-#         temperature=0,
-#         base_url='http://js1.blockelite.cn:16281',
-#         model=llm_name,
-#         # streaming=True,
-#         # seed=2,
-#         top_k=10,  # A higher value (100) will give more diverse answers, while a lower value (10) will be more conservative.
-#         top_p=0.3,  # Higher value (0.95) will lead to more diverse text, while a lower value (0.5) will generate more focused text.
-#         num_ctx=3072,  # Sets the size of the context window used to generate the next token.
-#     )
-responses = ["窗前明月光\n低头鞋两双"]
-llm = FakeListLLM(responses=responses)
+llm = ChatOllama(
+        temperature=0,
+        base_url='http://js1.blockelite.cn:20863',
+        model=llm_name,
+        # streaming=True,
+        # seed=2,
+        top_k=10,  # A higher value (100) will give more diverse answers, while a lower value (10) will be more conservative.
+        top_p=0.3,  # Higher value (0.95) will lead to more diverse text, while a lower value (0.5) will generate more focused text.
+        num_ctx=3072,  # Sets the size of the context window used to generate the next token.
+    )
+responses = [""" {
+    "project_name": [
+        "help"
+    ],
+    "method_desc": [
+        "发起esb请求",
+        "发起http请求"
+    ]
+}"""]
+
+responses1 = ["""{
+    "project_name": [
+        "employee-center"
+    ],
+    "method_name": []
+}"""]
+llm1 = FakeListLLM(responses=responses)
 # prompt = ChatPromptTemplate.from_template("tell me a joke about {topic}")
 
 # chain = prompt | llm | StrOutputParser()
@@ -60,6 +75,7 @@ class Joke(BaseModel):
     project_name: List[str] = Field(description="question to set up a joke")
     method_name: List[str] = Field(description="answer to resolve the joke")
     method_desc: List[str] = Field(description="answer to resolve the joke")
+    class_name: List[str] = Field(description="answer to resolve the joke")
 
 prompt = """我有一个neo4j图数据库，它主要用来存储java代码，它里面有一个节点叫Method，顾名思义，用来存储方法，
 Method节点主要的属性有：project_name(工程名称)，class_name(类名)，method_name(方法名)，body(完整的代码)，method_desc(方法的功能描述)。现在有个问题需要你解决，
@@ -79,9 +95,21 @@ Method节点主要的属性有：project_name(项目名称)，class_name(类名)
 用户问题是 {question}"""
 promp_second = ChatPromptTemplate.from_template(prompt2)
 parser = JsonOutputParser(pydantic_object=Joke)
-chain = promp_second | llm | parser
+chain = promp_second | llm1 | parser
 msg1 = chain.invoke({"question": "在help项目中，有个方法的功能是发起esb请求，还有个方法是发起http请求，请给我这些方法的代码"})
-print(msg1)
 
-# msg2 = chain.invoke({"question": "在employee-center项目中，有个方法的内容是对feign进行功能增强，我想了解这部分功能是如何实现的"})
-# print(msg2)
+if not msg1["project_name"]:
+    print('没提到项目关键字,直接把用户问题返回')
+else:
+    if not msg1["class_name"]:
+        print("类名不为空，返回整个类的代码") 
+    if not msg1["method_name"]:
+        print("方法名不为空，返回方法的代码")
+    
+    print("最后聚合阶段，如果召回的方法代码在类中已经存在，不必再返回方法代码")
+
+json_str1 = json.dumps(msg1, ensure_ascii=False, indent=4)
+print(json_str1)
+msg2 = chain.invoke({"question": "在employee-center项目中，有个方法的内容是对feign进行功能增强，我想了解这部分功能是如何实现的"})
+json_str2 = json.dumps(msg2, ensure_ascii=False, indent=4)
+print(json_str2)

@@ -180,8 +180,16 @@ def configure_method_rag_chain(llm, embeddings, embeddings_store_url, username, 
         index_name="method_index",  # vector by default
         text_node_property="body",  # text by default
         retrieval_query="""
-OPTIONAL MATCH (node)-[:CALLS]->(p) WITH node, score, collect(p.body) AS editors RETURN node.body AS text, score, editors,{source:node.body,invoke:editors} AS metadata
-    """,
+with node AS method,score AS similarity
+CALL { with method
+        MATCH (method)-[:CALLS]->(invoked_method)
+        WITH collect(invoked_method) as invoked_methods
+        RETURN reduce(str='', invoked_method IN invoked_methods | str + 
+                '\n### invoked_method (method_name: '+ invoked_method.method_name +'): '+  invoked_method.body + '\n') as invoked_method_Texts
+    } 
+return method.body + '\n' + invoked_method_Texts  AS text,similarity as score,{source: method.class_id} AS metadata
+
+""",
     )
 
     kg_qa = RetrievalQAWithSourcesChain(

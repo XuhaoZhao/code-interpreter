@@ -47,11 +47,19 @@ kg = Neo4jVector.from_existing_index(
     password=password,
     database="neo4j",  # neo4j by default
     index_name="method_index",  # vector by default
-    text_node_property="method_name",  # text by default
+    text_node_property="body",  # text by default
     retrieval_query="""
-OPTIONAL MATCH (node)-[:CALLS]->(p) WITH node, score, collect(p.body) AS editors RETURN {method:node.body,invoke:editors} AS text, score, editors,node{body:node.body,invoke:editors} AS metadata
+with node AS method,score AS similarity
+CALL { with method
+        MATCH (method)-[:CALLS]->(invoked_method)
+        WITH collect(invoked_method) as invoked_methods
+        RETURN reduce(str='', invoked_method IN invoked_methods | str + 
+                '\n### invoked_method (method_name: '+ invoked_method.method_name +'): '+  invoked_method.body + '\n') as invoked_method_Texts
+    } 
+return method.body + '\n' + invoked_method_Texts  AS text,similarity as score,{source: method.class_id} AS metadata
+
 """,
 )
 
-print(kg.similarity_search("where is the SingleStart", k=1))
+print(kg.similarity_search("where is the buildCreateTableSql", k=1))
 

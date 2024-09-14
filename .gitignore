@@ -1,4 +1,6 @@
 __pycache__/
 binlogportal/
+Chat2DB/
 data/
 embedding_model/
+*.db

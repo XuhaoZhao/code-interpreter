@@ -27,14 +27,14 @@ def _get_project_files(project_dir):
             filepath = filepath.replace('\\', '/')
             file_lists.append(filepath)
     return file_lists
-commit_first = '665af7cd02b5c1756bdbee993e876e24fcfee3cf'
-commit_second = '061f8c5d2256eda4a6a63a0a3cdbe2be68e13ed2'
+commit_first = '5afb04e31e10c491e0f8e7e1506b599bd2d683ec'
+commit_second = '41b3bb1712f9dba00a7b76d772187ce7865c9200'
 branch_name = 'master'
 username = 'XuhaoZhao'
 commit_or_branch_new = commit_first[0: 7] if len(commit_first) > 7 else commit_first
 commit_or_branch_old = commit_second[0: 7] if len(commit_second) > 7 else commit_second
 sqlite = SqliteHelper(config.db_path + '/' + username + '_jcci.db')
-git_url = 'https://github.com/dothetrick/binlogportal.git'
+git_url = 'https://github.com/CodePhiliaX/Chat2DB'
 project_name = git_url.split('/')[-1].split('.git')[0]
 project_id = sqlite.add_project(project_name, git_url, branch_name,commit_or_branch_new,commit_or_branch_old)
 file_path = os.path.join(config.project_path, project_name)
