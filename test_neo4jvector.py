@@ -46,7 +46,7 @@ kg = Neo4jVector.from_existing_index(
     username=username,
     password=password,
     database="neo4j",  # neo4j by default
-    index_name="method_index",  # vector by default
+    index_name="method_name_index",  # vector by default
     text_node_property="body",  # text by default
     retrieval_query="""
 with node AS method,score AS similarity

@@ -490,6 +490,7 @@ class JavaParse(object):
                 'method_name_embedding': embeddings.embed_query(method_name),
                 'parameters': json.dumps(parameters),
                 'body': "\n".join(method_body),
+                'body_embedding': embeddings.embed_query( "\n".join(method_body)),
                 'method_invocation_map': json.dumps(method_invocation),
                 'is_static': is_static,
                 'is_abstract': is_abstract,
@@ -498,8 +499,10 @@ class JavaParse(object):
                 'start_line': method_start_line,
                 'end_line': method_end_line,
                 'documentation': documentation,
+                # 'documentation_embedding': embeddings.embed_query(documentation),
                 'full_class_name': class_db['package_name'] + '.'+ class_db['class_name'],
                 'class_name': class_db['class_name'],
+                'class_name_embedding': embeddings.embed_query(class_db['class_name']),
                 'class_type': class_db['class_type']
 
             }
@@ -519,6 +522,7 @@ class JavaParse(object):
             method.method_name_embedding = method_data.method_name_embedding,
             method.parameters = method_data.parameters,
             method.body = method_data.body,
+            method.body_embedding = method_data.body_embedding,
             method.method_invocation_map = method_data.method_invocation_map,
             method.is_static = method_data.is_static,
             method.is_abstract = method_data.is_abstract,
@@ -526,9 +530,9 @@ class JavaParse(object):
             method.api_path = method_data.api_path,
             method.start_line = method_data.start_line,
             method.end_line = method_data.end_line,
-            method.documentation = method_data.documentation,
             method.full_class_name = method_data.full_class_name,
             method.class_name = method_data.class_name,
+            method.class_name_embedding = method_data.class_name_embedding,
             method.class_type = method_data.class_type
         ON MATCH SET
             method.class_id = method_data.class_id,
@@ -540,6 +544,7 @@ class JavaParse(object):
             method.method_name_embedding = method_data.method_name_embedding,
             method.parameters = method_data.parameters,
             method.body = method_data.body,
+            method.body_embedding = method_data.body_embedding,
             method.method_invocation_map = method_data.method_invocation_map,
             method.is_static = method_data.is_static,
             method.is_abstract = method_data.is_abstract,
@@ -547,9 +552,10 @@ class JavaParse(object):
             method.api_path = method_data.api_path,
             method.start_line = method_data.start_line,
             method.end_line = method_data.end_line,
-            method.documentation = method_data.documentation,
+
             method.full_class_name = method_data.full_class_name,
             method.class_name = method_data.class_name,
+            method.class_name_embedding = method_data.class_name_embedding,
             method.class_type = method_data.class_type
         """
         params = {"all_method_graph":all_method_graph}

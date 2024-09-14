@@ -38,9 +38,23 @@ def create_vector_index(driver, dimension: int) -> None:
     except:  # Already exists
         pass
 def create_method_vector_index(driver, dimension: int) -> None:
-    index_query = "CALL db.index.vector.createNodeIndex('method_index', 'Method', 'method_name_embedding', $dimension, 'cosine')"
+    index_query1 = "CALL db.index.vector.createNodeIndex('method_index', 'Method', 'method_name_embedding', $dimension, 'cosine')"
+    index_query2 = "CALL db.index.vector.createNodeIndex('body_index', 'Method', 'body_embedding', $dimension, 'cosine')"
+    index_query3 = "CALL db.index.vector.createNodeIndex('documentation_index', 'Method', 'documentation_embedding', $dimension, 'cosine')"
+    index_query4 = "CALL db.index.vector.createNodeIndex('class_name_index', 'Method', 'class_name_embedding', $dimension, 'cosine')"
+    index_querynn = """
+BEGIN;
+CALL db.index.vector.createNodeIndex('method_name_index', 'Method', 'method_name_embedding', $dimension, 'cosine');
+CALL db.index.vector.createNodeIndex('body_index', 'Method', 'body_embedding', $dimension, 'cosine');
+CALL db.index.vector.createNodeIndex('documentation_index', 'Method', 'documentation_embedding', $dimension, 'cosine');
+CALL db.index.vector.createNodeIndex('class_name_index', 'Method', 'class_name_embedding', $dimension, 'cosine');
+COMMIT;
+"""
     try:
-        driver.query(index_query, {"dimension": dimension})
+        driver.query(index_query1, {"dimension": dimension})
+        driver.query(index_query2, {"dimension": dimension})
+        driver.query(index_query3, {"dimension": dimension})
+        driver.query(index_query4, {"dimension": dimension})
     except:  # Already exists
         pass
 
