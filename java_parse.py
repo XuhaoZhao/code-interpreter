@@ -479,6 +479,16 @@ class JavaParse(object):
                 'end_line': method_end_line,
                 'documentation': documentation
             }
+
+            try:
+                if not documentation:
+                    documentation = " "
+                doc_embed = embeddings.embed_query(documentation)
+                
+            except Exception as e:
+                logging.error(f"Error insert neo4j {filepath}: {e}")
+                return
+            
             method_db_graph= {
                 'method_id': uuid.uuid4().hex,
                 'class_id': class_id,
@@ -499,7 +509,7 @@ class JavaParse(object):
                 'start_line': method_start_line,
                 'end_line': method_end_line,
                 'documentation': documentation,
-                # 'documentation_embedding': embeddings.embed_query(documentation),
+                'documentation_embedding': doc_embed,
                 'full_class_name': class_db['package_name'] + '.'+ class_db['class_name'],
                 'class_name': class_db['class_name'],
                 'class_name_embedding': embeddings.embed_query(class_db['class_name']),
@@ -530,6 +540,8 @@ class JavaParse(object):
             method.api_path = method_data.api_path,
             method.start_line = method_data.start_line,
             method.end_line = method_data.end_line,
+            method.documentation = method_data.documentation,
+            method.documentation_embedding = method_data.documentation_embedding,
             method.full_class_name = method_data.full_class_name,
             method.class_name = method_data.class_name,
             method.class_name_embedding = method_data.class_name_embedding,
@@ -552,14 +564,19 @@ class JavaParse(object):
             method.api_path = method_data.api_path,
             method.start_line = method_data.start_line,
             method.end_line = method_data.end_line,
-
+            method.documentation = method_data.documentation,
+            method.documentation_embedding = method_data.documentation_embedding,
             method.full_class_name = method_data.full_class_name,
             method.class_name = method_data.class_name,
             method.class_name_embedding = method_data.class_name_embedding,
             method.class_type = method_data.class_type
         """
         params = {"all_method_graph":all_method_graph}
+
+
         neo4j_graph.query(query, params)
+
+        
         self.sqlite.update_data(f'DELETE FROM methods where class_id={class_id}')
         self.sqlite.insert_data('methods', all_method)
 

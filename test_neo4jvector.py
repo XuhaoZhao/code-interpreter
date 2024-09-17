@@ -46,7 +46,7 @@ kg = Neo4jVector.from_existing_index(
     username=username,
     password=password,
     database="neo4j",  # neo4j by default
-    index_name="method_name_index",  # vector by default
+    index_name="method_index",  # vector by default
     text_node_property="body",  # text by default
     retrieval_query="""
 with node AS method,score AS similarity
@@ -60,6 +60,15 @@ return method.body + '\n' + invoked_method_Texts  AS text,similarity as score,{s
 
 """,
 )
-
 print(kg.similarity_search("where is the buildCreateTableSql", k=1))
+
+
+embeddings, dimension = load_embedding_model(embedding_model_name, config={"ollama_base_url": ollama_base_url}, logger=logger)
+method_name = """
+    /**
+     * 错的舅舅次打开文件和技术课程
+     */
+"""
+
+print(embeddings.embed_query(method_name))
 
