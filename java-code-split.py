@@ -165,5 +165,5 @@ def find_java_files(folder_path):
     
 
 # 示例用法
-folder_path = "./binlogportal"
+folder_path = "./Chat2DB/chat2db-server/chat2db-server-web/chat2db-server-web-api/src/main/java/ai/chat2db/server/web/api/controller/sql"
 find_java_files(folder_path)

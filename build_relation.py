@@ -25,7 +25,7 @@ for method in method_result:
     for key in method_invocation:
         if 'methods' in method_invocation[key]:
             
-            # 能过找到方法所在的package
+            # 能找到方法所在的package
             full_package_split = key.split(".")
             if len(full_package_split) > 1:
                 class_name = key
@@ -34,9 +34,10 @@ for method in method_result:
                     method_name = key1.split("(", 1)[0]
                     method_name_list.append(method_name)
                 method_name_str = ', '.join([f"'{name}'" for name in method_name_list])
+                interface_class = full_package_split[-1]
                 query_invocation_method = f'''
                 MATCH (u:Method)
-                WHERE u.full_class_name = '{class_name}' AND u.method_name IN [{method_name_str}] and u.class_type = 'Class'
+                WHERE (u.full_class_name = '{class_name}' OR u.implements = '{interface_class}') AND u.method_name IN [{method_name_str}] and u.class_type = 'Class'
                 RETURN u
                 '''
                 invocation_method_result = neo4j_graph.query(query_invocation_method)

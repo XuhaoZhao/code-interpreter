@@ -16,7 +16,7 @@ import os
 import requests
 from dotenv import load_dotenv
 from langchain_community.graphs import Neo4jGraph
-from utils import create_constraint_for_method_node, create_method_vector_index
+from utils import create_constraint_for_method_node, create_method_vector_index,create_constraint_for_class_request_node
 from chains import load_embedding_model
 from streamlit.logger import get_logger
 import uuid
@@ -42,6 +42,7 @@ embedding_model_name = os.getenv("EMBEDDING_MODEL")
 ollama_base_url = os.getenv("OLLAMA_BASE_URL")
 embeddings, dimension = load_embedding_model(embedding_model_name, config={"ollama_base_url": ollama_base_url}, logger=logger)
 create_constraint_for_method_node(neo4j_graph)
+create_constraint_for_class_request_node(neo4j_graph)
 create_method_vector_index(neo4j_graph, dimension)
 
 
@@ -97,7 +98,7 @@ class JavaParse(object):
         extends_in_imports = [import_obj for import_obj in import_list if extends_class in import_obj['import_path']]
         return extends_in_imports[0]['import_path'] if extends_in_imports else package_name + '.' + extends_class
 
-    def _parse_class(self, node, filepath: str, package_name: str, import_list: list, commit_or_branch: str, parse_import_first):
+    def _parse_class(self, node, filepath: str, package_name: str, import_list: list, commit_or_branch: str, parse_import_first,lines):
         # 处理class信息
         documentation = node.documentation
         class_name = node.name
@@ -118,6 +119,14 @@ class JavaParse(object):
                 self.parse_java_file(extends_class_filepath, commit_or_branch, parse_import_first=parse_import_first)
         implements = ','.join([implement.name for implement in node.implements]) if 'implements' in node.attrs and node.implements else None
         class_id, new_add = self.sqlite.add_class(filepath.replace('\\', '/'), access_modifier, class_type, class_name, package_name, extends_package_class, self.project_id, implements, annotations_json, documentation, is_controller, controller_base_url, commit_or_branch)
+        if 'Request' in class_name:
+            class_db_data = {'class_request_id':uuid.uuid4().hex,'filepath':filepath.replace('\\', '/'),'class_type':class_type,'class_name':class_name,'package_name':package_name,'file_content':"\n".join(lines)}
+            create_cypher = """
+            CREATE (rc:RequestClass {class_request_id:$class_request_id,filepath: $filepath, class_type: $class_type,class_name:$class_name,package_name:$package_name,file_content:$file_content})
+            """
+            neo4j_graph.query(create_cypher,class_db_data)
+
+
         return class_id, new_add
 
     def _parse_imports(self, imports):
@@ -513,7 +522,8 @@ class JavaParse(object):
                 'full_class_name': class_db['package_name'] + '.'+ class_db['class_name'],
                 'class_name': class_db['class_name'],
                 'class_name_embedding': embeddings.embed_query(class_db['class_name']),
-                'class_type': class_db['class_type']
+                'class_type': class_db['class_type'],
+                'implements': class_db['implements']
 
             }
 
@@ -545,7 +555,8 @@ class JavaParse(object):
             method.full_class_name = method_data.full_class_name,
             method.class_name = method_data.class_name,
             method.class_name_embedding = method_data.class_name_embedding,
-            method.class_type = method_data.class_type
+            method.class_type = method_data.class_type,
+            method.implements = method_data.implements
         ON MATCH SET
             method.class_id = method_data.class_id,
             method.project_id = method_data.project_id,
@@ -569,7 +580,8 @@ class JavaParse(object):
             method.full_class_name = method_data.full_class_name,
             method.class_name = method_data.class_name,
             method.class_name_embedding = method_data.class_name_embedding,
-            method.class_type = method_data.class_type
+            method.class_type = method_data.class_type,
+            method.implements = method_data.implements
         """
         params = {"all_method_graph":all_method_graph}
 
@@ -1067,7 +1079,7 @@ class JavaParse(object):
 
         # 处理 class 信息
         class_type = type(class_declaration).__name__.replace('Declaration', '')
-        class_id, new_add = self._parse_class(class_declaration, filepath, package_name, import_list, commit_or_branch, parse_import_first)
+        class_id, new_add = self._parse_class(class_declaration, filepath, package_name, import_list, commit_or_branch, parse_import_first,lines)
         # 已经处理过了，返回
         if not new_add and not config.reparse_class:
             return

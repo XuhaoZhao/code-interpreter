@@ -60,15 +60,23 @@ return method.body + '\n' + invoked_method_Texts  AS text,similarity as score,{s
 
 """,
 )
-print(kg.similarity_search("where is the buildCreateTableSql", k=1))
+# print(kg.similarity_search("where is the buildCreateTableSql", k=1))
 
 
-embeddings, dimension = load_embedding_model(embedding_model_name, config={"ollama_base_url": ollama_base_url}, logger=logger)
-method_name = """
-    /**
-     * 错的舅舅次打开文件和技术课程
-     */
+# embeddings, dimension = load_embedding_model(embedding_model_name, config={"ollama_base_url": ollama_base_url}, logger=logger)
+# method_name = """
+#     /**
+#      * 错的舅舅次打开文件和技术课程
+#      */
+# """
+
+# print(embeddings.embed_query(method_name))
+class_db_data = {'filepath':filepath,'class_type':class_type,'class_name':class_name,'package_name':package_name,'file_content':'file_content'}
+create_cypher = """
+CREATE (c:Class {filepath: $filepath, class_type: $class_type,class_name:$class_name,package_name:$package_name,file_content:$file_content})
 """
+neo4j_graph.query(create_cypher,class_db_data)
 
-print(embeddings.embed_query(method_name))
+
+
 

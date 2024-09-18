@@ -74,3 +74,7 @@ def create_constraints(driver):
 def create_constraint_for_method_node(driver):
     driver.query(
     "CREATE CONSTRAINT method_id_unique IF NOT EXISTS FOR (m:Method) REQUIRE (m.method_id) IS UNIQUE")
+
+def create_constraint_for_class_request_node(driver):
+    driver.query(
+    "CREATE CONSTRAINT class_request_id_unique IF NOT EXISTS FOR (rc:RequestClass) REQUIRE (rc.class_request_id) IS UNIQUE")
