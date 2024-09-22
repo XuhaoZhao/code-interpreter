@@ -145,48 +145,7 @@ rag_chain = configure_method_rag_chain(
     llm, embeddings, embeddings_store_url=url, username=username, password=password
 )
 
-# Streamlit UI
-styl = f"""
-<style>
-    /* not great support for :has yet (hello FireFox), but using it for now */
-    .element-container:has([aria-label="Select RAG mode"]) {{
-      position: fixed;
-      bottom: 200px;
-      background: white;
-      z-index: 101;
-    }}
-    .stChatFloatingInputContainer {{
-        bottom: 10px;
-    }}
 
-    /* Generate ticket text area */
-    textarea[aria-label="Description"] {{
-        height: 200px;
-    }}
-</style>
-"""
-st.markdown(styl, unsafe_allow_html=True)
-
-
-def chat_input():
-    user_input = st.chat_input("What coding issue can I help you resolve today?")
-
-    if user_input:
-        with st.chat_message("user"):
-            st.write(user_input)
-        with st.chat_message("assistant"):
-            st.caption(f"RAG: {name}")
-            stream_handler = StreamHandler(st.empty())
-            # result = getLLMResponse(user_input,stream_handler)
-            print("hello11111")
-            result = output_function(
-                {"question": user_input, "chat_history": []}, callbacks=[stream_handler]
-            )["answer"]
-            output = result
-            print(output)
-            st.session_state[f"user_input"].append(user_input)
-            st.session_state[f"generated"].append(output)
-            st.session_state[f"rag_mode"].append(name)
 
 def getLLMResponse(user_input,stream_handler):
     general_user_template = "Question:```{question}```"
@@ -266,85 +225,28 @@ def getLLMResponse(user_input,stream_handler):
         result = qa_chain.invoke({"question": question, "input_documents": result})
         print(result["output_text"])
         return result["output_text"]
-    return output_function(
+    return rag_chain(
                 {"question": user_input, "chat_history": []},callbacks=[stream_handler]
             )["answer"]
-def display_chat():
-    # Session state
-    if "generated" not in st.session_state:
-        st.session_state[f"generated"] = []
 
-    if "user_input" not in st.session_state:
-        st.session_state[f"user_input"] = []
+# Streamlit 应用
+stream_handler = StreamHandler(st.empty())
+def main():
+    st.title("实时输入处理示例")
 
-    if "rag_mode" not in st.session_state:
-        st.session_state[f"rag_mode"] = []
+    # 用户输入
+    user_input = st.text_input("请输入文本:")
+    
+    # 当用户输入后，调用处理函数
+    if user_input:
+        result = getLLMResponse(user_input,stream_handler)
+        st.write(result)
 
-    if st.session_state[f"generated"]:
-        size = len(st.session_state[f"generated"])
-        # Display only the last three exchanges
-        for i in range(max(size - 3, 0), size):
-            with st.chat_message("user"):
-                st.write(st.session_state[f"user_input"][i])
-
-            with st.chat_message("assistant"):
-                st.caption(f"RAG: {st.session_state[f'rag_mode'][i]}")
-                st.write(st.session_state[f"generated"][i])
-
-        with st.expander("Not finding what you're looking for?"):
-            st.write(
-                "Automatically generate a draft for an internal ticket to our support team."
-            )
-            st.button(
-                "Generate ticket",
-                type="primary",
-                key="show_ticket",
-                on_click=open_sidebar,
-            )
-        with st.container():
-            st.write("&nbsp;")
+if __name__ == "__main__":
+    main()
 
 
-def mode_select() -> str:
-    options = ["Disabled", "Enabled"]
-    return st.radio("Select RAG mode", options, horizontal=True)
 
 
-name = mode_select()
-if name == "LLM only" or name == "Disabled":
-    output_function = llm_chain
-elif name == "Vector + Graph" or name == "Enabled":
-    output_function = rag_chain
 
 
-def open_sidebar():
-    st.session_state.open_sidebar = True
-
-
-def close_sidebar():
-    st.session_state.open_sidebar = False
-
-
-if not "open_sidebar" in st.session_state:
-    st.session_state.open_sidebar = False
-if st.session_state.open_sidebar:
-    new_title, new_question = generate_ticket(
-        neo4j_graph=neo4j_graph,
-        llm_chain=llm_chain,
-        input_question=st.session_state[f"user_input"][-1],
-    )
-    with st.sidebar:
-        st.title("Ticket draft")
-        st.write("Auto generated draft ticket")
-        st.text_input("Title", new_title)
-        st.text_area("Description", new_question)
-        st.button(
-            "Submit to support team",
-            type="primary",
-            key="submit_ticket",
-            on_click=close_sidebar,
-        )
-
-
-display_chat()
-chat_input()

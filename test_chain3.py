@@ -41,33 +41,6 @@ url = os.getenv("NEO4J_URI")
 username = os.getenv("NEO4J_USERNAME")
 password = os.getenv("NEO4J_PASSWORD")
 ollama_base_url = os.getenv("OLLAMA_BASE_URL")
-llm_name = os.getenv("LLM")
-llm = ChatOllama(
-        temperature=0,
-        base_url=ollama_base_url,
-        model=llm_name,
-        # streaming=True,
-        # seed=2,
-        top_k=10,  # A higher value (100) will give more diverse answers, while a lower value (10) will be more conservative.
-        top_p=0.3,  # Higher value (0.95) will lead to more diverse text, while a lower value (0.5) will generate more focused text.
-        num_ctx=3072,  # Sets the size of the context window used to generate the next token.
-    )
-
-messages = [
-    (
-        "system",
-        "You are a helpful assistant that translates English to Chinese. Translate the user sentence.",
-    ),
-    ("human", "I love programming."),
-]
-# ai_msg = llm.invoke(messages)
-# print(ai_msg.content)
-
-chunks = []
-for chunk in llm.stream("天空是什么颜色?"):
-    chunks.append(chunk)
-    print(chunk.content, end="|", flush=True)
-
 
 general_system_template = """ 
 你是一个java代码高手，我会在上下文中提供几个关键的代码片段，代码片段是有结构的，每个片段用//------//分割,开头的一个java方法是非常重要的核心方法，接下来的代码片段会是核心方法的参数定义、核心方法调用的其他方法，

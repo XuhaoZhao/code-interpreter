@@ -39,16 +39,24 @@ embeddings, dimension = load_embedding_model(
 )
 
 
-# Vector + Knowledge Graph response
-kg = Neo4jVector.from_existing_index(
-    embedding=embeddings,
-    url=url,
-    username=username,
-    password=password,
-    database="neo4j",  # neo4j by default
-    index_name="method_index",  # vector by default
-    text_node_property="body",  # text by default
-    retrieval_query="""
+
+
+query1 = """
+WITH node AS method, score AS similarity
+CALL {
+    WITH method
+    MATCH (method)-[:CALLS]->(invoked_method)
+    OPTIONAL MATCH (invoked_method)-[:PARAM]->(param)
+    WITH invoked_method, collect(param.parameter_name) AS parameters
+    WITH collect(invoked_method) AS invoked_methods, collect(parameters) AS method_parameters
+    RETURN reduce(str = '', i IN range(0, size(invoked_methods)-1) | 
+        str + '\n //invoked_method (method_name: ' + invoked_methods[i].method_name + 
+        ', parameters: ' + apoc.text.join(method_parameters[i], ', ') + 
+        '): ' + invoked_methods[i].body + '\n') AS invoked_method_Texts
+}
+RETURN method.body + '\n' + invoked_method_Texts AS text, similarity AS score, {source: method.class_id} AS metadata
+"""
+query3 = """
 with node AS method,score AS similarity
 CALL { with method
         MATCH (method)-[:CALLS]->(invoked_method)
@@ -58,24 +66,45 @@ CALL { with method
     } 
 return method.body + '\n' + invoked_method_Texts  AS text,similarity as score,{source: method.class_id} AS metadata
 
-""",
-)
-# print(kg.similarity_search("where is the buildCreateTableSql", k=1))
-
-
-# embeddings, dimension = load_embedding_model(embedding_model_name, config={"ollama_base_url": ollama_base_url}, logger=logger)
-# method_name = """
-#     /**
-#      * 错的舅舅次打开文件和技术课程
-#      */
-# """
-
-# print(embeddings.embed_query(method_name))
-class_db_data = {'filepath':filepath,'class_type':class_type,'class_name':class_name,'package_name':package_name,'file_content':'file_content'}
-create_cypher = """
-CREATE (c:Class {filepath: $filepath, class_type: $class_type,class_name:$class_name,package_name:$package_name,file_content:$file_content})
 """
-neo4j_graph.query(create_cypher,class_db_data)
+query2 = """
+WITH node AS method, score AS similarity
+CALL{
+WITH method
+OPTIONAL MATCH (method)-[:CALLS]->(called_method:Method)
+WITH method, collect(called_method) AS called_methods
+OPTIONAL MATCH (method)-[:PARAM]->(param_class:RequestClass)
+WITH 
+    called_methods, 
+    collect(param_class) AS param_classes
+RETURN reduce(calls_str = '', called_method IN called_methods | 
+              calls_str +'\n //------//' + '\n //Called Method: \n' + called_method.body) 
+       AS called_methods_text,
+       reduce(params_str = '', param_class IN param_classes | 
+              params_str+'\n //------//' + '\n //Parameter Class: \n'  + param_class.file_content) 
+       AS param_classes_text
+}
+RETURN method.body + '\n' + called_methods_text + '\n' + param_classes_text AS text, similarity AS score, {source: method.class_id} AS metadata
+"""
+
+query4 = """
+WITH node AS method, score AS similarity
+RETURN method.body  AS text, similarity AS score, {source: method.class_id} AS metadata
+"""
+
+# Vector + Knowledge Graph response
+kg = Neo4jVector.from_existing_index(
+    embedding=embeddings,
+    url=url,
+    username=username,
+    password=password,
+    database="neo4j",  # neo4j by default
+    index_name="method_index",  # vector by default
+    text_node_property="body",  # text by default
+    retrieval_query=query2,
+)
+
+print(kg.similarity_search("addChatGptSystemConfig", k=1))
 
 
 
