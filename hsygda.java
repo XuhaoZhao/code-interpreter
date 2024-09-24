@@ -484,56 +484,5 @@ Source: ai.chat2db.server.web.api.controller.config.ConfigController
 
 Human: Question:```在help项目中，有个java方法叫addChatGptSystemConfig，我现在想在别的系统中调用这个借口，请帮我编写代码```
 
-> Finished chain.
 
-> Finished chain.
-在别的系统中调用`addChatGptSystemConfig`接口，你需要创建一个HTTP请求来发送POST请求到该接口。以下是一个使用Java的HttpClient库进行调用的示例代码：
-
-```java
-import org.apache.http.HttpEntity;
-import org.apache.http.client.methods.CloseableHttpResponse;
-import org.apache.http.client.methods.HttpPost;
-import org.apache.http.entity.StringEntity;
-import org.apache.http.impl.client.CloseableHttpClient;
-import org.apache.http.impl.client.HttpClients;
-import org.apache.http.util.EntityUtils;
-
-public class Main {
-    public static void main(String[] args) {
-        String url = "http://yourdomain.com/system_config/ai";
-        AIConfigCreateRequest request = new AIConfigCreateRequest();
-        // 设置请求参数
-        request.setApiKey("your_api_key");
-        request.setSecretKey("your_secret_key");
-        request.setApiHost("your_api_host");
-        request.setHttpProxyHost("your_http_proxy_host");
-        request.setHttpProxyPort("your_http_proxy_port");
-        request.setAiSqlSource("your_ai_sql_source");
-        request.setModel("your_model");
-
-        try {
-            CloseableHttpClient httpClient = HttpClients.createDefault();
-            HttpPost httpPost = new HttpPost(url);
-            String json = "{\"apiKey\":\"" + request.getApiKey() + "\",\"secretKey\":\"" + request.getSecretKey()
-                    + "\",\"apiHost\":\"" + request.getApiHost() + "\",\"httpProxyHost\":\""
-                    + request.getHttpProxyHost() + "\",\"httpProxyPort\":\"" + request.getHttpProxyPort()
-                    + "\",\"aiSqlSource\":\"" + request.getAiSqlSource() + "\",\"model\":\"" + request.getModel() + "\"}";
-            StringEntity entity = new StringEntity(json);
-            httpPost.setEntity(entity);
-            httpPost.setHeader("Content-type", "application/json");
-            CloseableHttpResponse response = httpClient.execute(httpPost);
-
-            HttpEntity responseEntity = response.getEntity();
-            if (responseEntity != null) {
-                String result = EntityUtils.toString(responseEntity);
-                System.out.println(result);
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-    }
-}
-```
-
-请将`yourdomain.com`替换为实际的域名，并根据需要设置其他请求参数。这段代码使用Apache HttpClient库发送POST请求到`addChatGptSystemConfig`接口，并将返回的响应打印出来。
-(develop_code_split) (base) zxh@zxh-virtual-machine:~/code-repo/code-interpreter$ 
+  

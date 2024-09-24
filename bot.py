@@ -178,12 +178,10 @@ def chat_input():
             st.caption(f"RAG: {name}")
             stream_handler = StreamHandler(st.empty())
             # result = getLLMResponse(user_input,stream_handler)
-            print("hello11111")
             result = output_function(
                 {"question": user_input, "chat_history": []}, callbacks=[stream_handler]
             )["answer"]
             output = result
-            print(output)
             st.session_state[f"user_input"].append(user_input)
             st.session_state[f"generated"].append(output)
             st.session_state[f"rag_mode"].append(name)

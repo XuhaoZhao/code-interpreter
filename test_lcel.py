@@ -210,7 +210,7 @@ RETURN m
 general_user_template = "Question:```{question}```"
 neo4j_graph = Neo4jGraph(url=url, username=username, password=password)
 # Vector + Knowledge Graph response
-question = "在help项目中，有个java方法叫addChatGptSystemConfig，请对这个方法的每一处代码生成详细的测试用例，包括它调用的其他方法"
+question = "在help项目中，有个java方法叫addChatGptSystemConfig，请对这个方法的每一处代码生成详细的测试用例，包括它调用的其他方法 请生成详细的接口文档,用中文回复"
 promp_second = ChatPromptTemplate.from_template(prompt2)
 parser = JsonOutputParser(pydantic_object=Joke)
 chain = promp_second | llm | parser
