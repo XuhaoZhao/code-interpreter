@@ -47,6 +47,7 @@ kg_class = Neo4jVector.from_existing_index(
 )
 query2 = """
 WITH node AS method, score AS similarity
+WHERE method.class_type = 'Class'
 CALL{
 WITH method
 OPTIONAL MATCH (method)-[:CALLS]->(called_method:Method)
@@ -84,7 +85,7 @@ def getCodeContext(userQuestion: UserQuestion):
     print("dcjhd" + userQuestion.method_name)
     if  userQuestion.method_name:
         print("hello1")
-        result = kg_method.similarity_search(userQuestion.method_name,k=1)
+        result = kg_method.similarity_search(userQuestion.method_name,k=10)
         code =  CodeContext(page_content = "",metadata = "")
         code.page_content = result[0].page_content
         code.metadata = result[0].metadata

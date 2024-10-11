@@ -526,7 +526,6 @@ class JavaParse(object):
                 'implements': class_db['implements']
 
             }
-
             all_method.append(method_db)
             all_method_graph.append(method_db_graph)
         query = """

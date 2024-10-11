@@ -35,6 +35,7 @@ commit_or_branch_new = commit_first[0: 7] if len(commit_first) > 7 else commit_f
 commit_or_branch_old = commit_second[0: 7] if len(commit_second) > 7 else commit_second
 sqlite = SqliteHelper(config.db_path + '/' + username + '_jcci.db')
 git_url = 'https://github.com/CodePhiliaX/Chat2DB'
+# git_url = 'https://github.com/spring-cloud/spring-cloud-consul'
 project_name = git_url.split('/')[-1].split('.git')[0]
 project_id = sqlite.add_project(project_name, git_url, branch_name,commit_or_branch_new,commit_or_branch_old)
 file_path = os.path.join(config.project_path, project_name)
